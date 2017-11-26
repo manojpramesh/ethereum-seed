@@ -12,6 +12,14 @@ Provides fast, reliable and extensible starter for the development of Ethereum p
 - Provides full Docker support for production environment
 - MongoDB Intergration
 
+### Upcoming features
+
+- Support for IPFS
+- Support for Ethereum Swarm
+- Support for Ethereum Whisper
+- Truffle integration
+- Client side application using Angular or React
+
 # How to start
 
 Note that this seed project requires node v8.x.x or higher and npm 5.x.x.
