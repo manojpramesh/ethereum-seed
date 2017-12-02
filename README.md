@@ -1,3 +1,8 @@
+
+# Ethereum Seed 
+
+[![Build Status](https://travis-ci.org/manojpramesh/ethereum-seed.svg?branch=master)](https://travis-ci.org/manojpramesh/ethereum-seed)
+    
 # Introduction
 
 Provides fast, reliable and extensible starter for the development of Ethereum projects.
