@@ -5,14 +5,9 @@ const _ = require('lodash');
 const SolidityFunction = require('web3/lib/web3/function');
 const Config = require("../config/ethereum");
 
-
 // create web3 instance
 const web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider(Config.rpc));
-
-// account constants
-const fromAccount = Config.accounts[0].address; //global.accounts[0].address;
-const privateKey = Config.accounts[0].privateKey; //new Buffer(global.accounts[0].privateKey, 'hex');
 
 module.exports = {
 
@@ -32,7 +27,7 @@ module.exports = {
         });
     },
 
-    deployContract: () => {
+    deployContractRaw: () => {
         let compiledContract = compileContract(contract, name);
         let rawTx = {
             nonce: web3.toHex(web3.eth.getTransactionCount(fromAccount)),
@@ -60,37 +55,43 @@ module.exports = {
     },
 
     readContract: (params, contractAddress, abi, funcName) => {
-        let contract = web3.eth.contract(abi).at(contractAddress);
-        return contract[funcName].call.apply(this, params);
+        return new Promise(function(resolve, reject) {
+            let contract = web3.eth.contract(abi).at(contractAddress);
+            resolve(contract[funcName].call.apply(this, params));
+        });
     },
 
     readContractArray: (count, contractAddress, abi, funcName) => {
-        let contract = web3.eth.contract(abi).at(contractAddress);
-        let response = [];
-        for (let index = 0; index < req.params.length; index++) {
-            response.push(contract[req.params.function](req.params.id, index));
-        }
-        return response;
+        return new Promise(function(resolve, reject) {
+            let contract = web3.eth.contract(abi).at(contractAddress);
+            let response = [];
+            for (let i = 0; i < req.params.length; i++) {
+                response.push(contract[req.params.function](req.params.id, i));
+            }
+            resolve(response);
+        });
     },
 
-    writeContract: (fromAccount, privateKey, amount, contractAddress, abi, funcName, params) => {
-        let tx = new Tx({
-            nonce: web3.toHex(web3.eth.getTransactionCount(fromAccount)),
-            gasPrice: web3.toHex(web3.eth.gasPrice),
-            gasLimit: web3.toHex(Config.gas),
-            to: contractAddress,
-            from: fromAccount,
-            value: web3.toHex(amount),
-            data: new SolidityFunction('', _.find(abi, { name: funcName }), '').toPayload(params).data
+    writeContractRaw: (from, privateKey, value, contractAddress, abi, funcName, params) => {
+        return new Promise(function(resolve, reject) {
+            let tx = new Tx({
+                nonce: web3.toHex(web3.eth.getTransactionCount(from)),
+                gasPrice: web3.toHex(web3.eth.gasPrice),
+                gasLimit: web3.toHex(Config.gas),
+                to: contractAddress,
+                from: from,
+                value: web3.toHex(value),
+                data: new SolidityFunction('', _.find(abi, { name: funcName }), '').toPayload(params).data
+            });
+            tx.sign(new Buffer(privateKey, 'hex'));
+            let serializedTx = tx.serialize();
+            let hash = web3.eth.sendRawTransaction("0x" + serializedTx.toString('hex'));
+            resolve(hash);
         });
-        tx.sign(new Buffer(privateKey, 'hex'));
-        let serializedTx = tx.serialize();
-        let hash = web3.eth.sendRawTransaction("0x" + serializedTx.toString('hex'));
-        return hash;
     },
 
     getAllEvents: (abi, contractAddress, eventName, fromAccount) => {
-        let searchCriteria = (fromAccount) ? { from: fromAccount } : {}
+        let searchCriteria = (fromAccount) ? { from: fromAccount } : {};
         let contract = web3.eth.contract(abi).at(contractAddress);
         return contract[eventName](searchCriteria, {
             fromBlock: 0,
